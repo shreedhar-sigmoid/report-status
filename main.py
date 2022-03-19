@@ -44,7 +44,7 @@ today_epoch = str((int(date.today().strftime("%s")) *1000)+19800000)
 date_lag_epoch = (int(date.today().strftime("%s")) *1000)+27000000
 # previous_day_epoch = str((int((date.today() - timedelta(days=1)).strftime("%s")) *1000)+19800000)   
 # day_of_week = datetime.fromtimestamp(int(previous_day_epoch)/1000).strftime("%A").lower()
-# monthly_epoch = int(date.today().replace(day=2).strftime("%s")) *1000 + 19800000
+monthly_epoch = int(date.today().replace(day=2).strftime("%s")) *1000 + 19800000
 # yesterday_date = (date.today() - timedelta(days = 1)).strftime("%d-%m-%Y")
 # last_month = (date.today().replace(day = 1) - timedelta(days=1)).strftime("%B")
 
@@ -88,7 +88,7 @@ def date_range(token):
         
     return data_lag
 
-def report_tracker(today_epoch,previous_day_epoch,day_of_week,monthly_epoch,yesterday_date,last_month):
+def report_tracker(today_epoch,previous_day_epoch,day_of_week,yesterday_date,last_month):
 
     username = parse.quote_plus(MONGO_USERNAME)
     password = parse.quote_plus(MONOGO_PASSWORD)
@@ -365,7 +365,7 @@ def report_tracker(today_epoch,previous_day_epoch,day_of_week,monthly_epoch,yest
                 for report in reports_list[2]:
                     if report[7] > 0:
 
-                        fail_count +=1
+                        fail_count += 1
 
                         org = report[0]
                         view = report[1]
@@ -404,7 +404,7 @@ def report_tracker(today_epoch,previous_day_epoch,day_of_week,monthly_epoch,yest
                             Details:
                                     Number of reports failed: {failed_reports_number}
                                 
-                        """.format(org = org, view = view, triggerType = triggerType, failed_reports_number = failed_reports_number)
+                        """.format(org = org, view = view, triggerType = triggerType, failed_reports_number = failed_reports_number,fail_count=str(fail_count))
                         #removing created file
                         remove(name)
         text += "please find the attatchments bellow for the reports names."
@@ -430,36 +430,35 @@ def report_tracker(today_epoch,previous_day_epoch,day_of_week,monthly_epoch,yest
 token = get_token()
 data_lag=date_range(token)
 
-if not path.exists("sendtime.pkl"):  
-    if data_lag != None:
-        sort_data_lag = data_lag[:]
-        sort_data_lag.sort()
-        print(sort_data_lag)
-        if 1==1:
-        # if sort_data_lag[0] >= date_lag_epoch:
-            #getting epoch time 
-            # today_epoch = str((int(date.today().strftime("%s")) *1000)+19800000)
-            # date_lag_epoch = (int(date.today().strftime("%s")) *1000)+27000000
+
+if data_lag != None:
+    sort_data_lag = data_lag[:]
+    sort_data_lag.sort()
+    if 1==1:
+    #checking if there any data lag less than 2nd hour of today(UTC)
+    #if sort_data_lag[0] >= data_lag_epoch:
+        if not path.exists("sendtime.pkl"):
+            today_epoch = str((int(date.today().strftime("%s")) *1000)+19800000)
             previous_day_epoch = str((int((date.today() - timedelta(days=1)).strftime("%s")) *1000)+19800000)   
             day_of_week = datetime.fromtimestamp(int(previous_day_epoch)/1000).strftime("%A").lower()
-            monthly_epoch = int(date.today().replace(day=2).strftime("%s")) *1000 + 19800000
             yesterday_date = (date.today() - timedelta(days = 1)).strftime("%d-%m-%Y")
-            last_month = (date.today().replace(day = 1) - timedelta(days=1)).strftime("%B")
-            report_tracker(today_epoch,previous_day_epoch,day_of_week,monthly_epoch,yesterday_date,last_month)
-            email_sent_time = int(datetime.utcnow().strftime("%s")) * 1000 + 19800000
-            file = open("sendtime.pkl", "wb")
-            pickle_dump(email_sent_time, file )
-            file.close()
+            last_month = (date.today().replace(day = 1) - timedelta(days=1)).strftime("%B")  
+            report_tracker(today_epoch,previous_day_epoch,day_of_week,yesterday_date,last_month)
+            email_sent_time = today_epoch
+            with open("sendtime.pkl", "wb") as file:
+                pickle_dump(email_sent_time, file)
 
-else:
-    email_sent_time = pickle_load(open("sendtime.pkl","rb"))
-    if email_sent_time < int(today_epoch):
-            if data_lag != None:
-                sort_data_lag = data_lag[:]
-                sort_data_lag.sort()
-                if sort_data_lag[0] >= date_lag_epoch:
-                    report_tracker()
-                    email_sent_time = int(datetime.utcnow().strftime("%s")) * 1000 + 19800000
-                    file = open("sendtime.pkl", "wb")
-                    pickle_dump(email_sent_time, file )
-                    file.close()
+        else:
+            email_sent_time = pickle_load(open("sendtime.pkl","rb"))
+            if email_sent_time < int(today_epoch):
+                days = int((int(today_epoch) - int(email_sent_time))/86400000)
+                for day in range(1,days+1):
+                    today_epoch = str((int((date.today() - timedelta(days=day-1)).strftime("%s")) *1000)+19800000) 
+                    previous_day_epoch = str((int((date.today() - timedelta(days=day)).strftime("%s")) *1000)+19800000) 
+                    day_of_week = datetime.fromtimestamp(int(previous_day_epoch)/1000).strftime("%A").lower()
+                    yesterday_date = (date.today() - timedelta(days = day)).strftime("%d-%m-%Y")
+                    last_month = ((date.today() - timedelta(days=day+1)).replace(day = 1) - timedelta(days=1)).strftime("%B")
+                    report_tracker(today_epoch,previous_day_epoch,day_of_week,yesterday_date,last_month)
+                email_sent_time = today_epoch
+                with open("sendtime.pkl", "wb") as file:
+                    pickle_dump(email_sent_time, file)
