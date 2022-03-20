@@ -42,11 +42,7 @@ EMAIL_PASSWORD= getenv('EMAIL_PASSWORD')
 #getting epoch time 
 today_epoch = str((int(date.today().strftime("%s")) *1000)+19800000)
 date_lag_epoch = (int(date.today().strftime("%s")) *1000)+27000000
-# previous_day_epoch = str((int((date.today() - timedelta(days=1)).strftime("%s")) *1000)+19800000)   
-# day_of_week = datetime.fromtimestamp(int(previous_day_epoch)/1000).strftime("%A").lower()
 monthly_epoch = int(date.today().replace(day=2).strftime("%s")) *1000 + 19800000
-# yesterday_date = (date.today() - timedelta(days = 1)).strftime("%d-%m-%Y")
-# last_month = (date.today().replace(day = 1) - timedelta(days=1)).strftime("%B")
 
 #funtion to get x-authtoken
 def get_token():
@@ -116,7 +112,7 @@ def report_tracker(today_epoch,previous_day_epoch,day_of_week,yesterday_date,las
             active_users_emails = []
             estimated_reports = 0
 
-            active_reports = report_coll.find({"reportStatus":"active","triggerType" : triggerType,"triggerDay" : triggerDay,"orgViewReq.organization" : org,"orgViewReq.view" : view},{"loginInfo.providerKey":1})
+            active_reports = report_coll.find({"reportStatus":"active","triggerType" : triggerType,"triggerDay" : triggerDay,"orgViewReq.organization" : org,"orgViewReq.view" : view,"createdOn" : {"$lt":previous_day_epoch}},{"loginInfo.providerKey":1})
             active_users = uns_coll.find({"activeStatus":True,"orgInfoList.name":org,"orgInfoList.viewInfoList.name":view},{"email":1})
             total_sent_reports = reportemail_coll.count({"emailSentTime":{"$gt":previous_day_epoch,"$lt":today_epoch},"emailStatus" : "c","triggerType":triggerType,"orgViewReq.organization":org,"orgViewReq.view":view})
             total_pending_reports = reportalert_coll.count({"executionOn":{"$gt":previous_day_epoch,"$lt":today_epoch},"triggerStatus" : "p","triggerType":triggerType,"orgViewReq.organization":org, "orgViewReq.view":view})
@@ -146,7 +142,7 @@ def report_tracker(today_epoch,previous_day_epoch,day_of_week,yesterday_date,las
     def table_row(rows):
         t=""
         for row in rows:
-            if row[2] != row[3]:
+            if row[2] != sum(row[3:]):
                 t+="""<tr style='background-color: #FFBBCC;'>
                     <td>"""+ row[0] +"""</td>
                     <td>"""+ row[1] +"""</td>
@@ -245,10 +241,9 @@ def report_tracker(today_epoch,previous_day_epoch,day_of_week,yesterday_date,las
         mismatch_message["Subject"] = "[ALERT] Mismatch Reports[{yesterday_date}]".format(yesterday_date=yesterday_date)
         mismatch_message["From"] = SENDER_EMAIL
         mismatch_message["To"] = RECIVER_EMAIL
-        text = """Hello,
-        Mismatch found in {yesterday_date} for followings:
-        """.format(yesterday_date = yesterday_date)
         mismatch_count = 0
+        mismatch_row =""
+        wb = Workbook()   
         for reports_list in all_data_list:
             #handling exception for monthly report
             if reports_list[2] != []:
@@ -268,16 +263,16 @@ def report_tracker(today_epoch,previous_day_epoch,day_of_week,yesterday_date,las
                         active_users_emails = []
                         estimated_reports_names = []
 
-                        active_reports = report_coll.find({"reportStatus":"active","triggerType" : triggerType,"triggerDay" : triggerDay,"orgViewReq.organization" : org,"orgViewReq.view" : view},{"loginInfo.providerKey":1,"reportName":1})
+                        active_reports = report_coll.find({"reportStatus":"active","triggerType" : triggerType,"triggerDay" : triggerDay,"orgViewReq.organization" : org,"orgViewReq.view" : view,"createdOn" : {"$lt":previous_day_epoch}},{"loginInfo.providerKey":1,"_id":1})
                         active_users = uns_coll.find({"activeStatus":True,"orgInfoList.name":org,"orgInfoList.viewInfoList.name":view},{"email":1})
-                        sent_reports = reportemail_coll.find({"emailSentTime":{"$gt":previous_day_epoch,"$lt":today_epoch},"emailStatus" : "c","triggerType":triggerType,"orgViewReq.organization":org,"orgViewReq.view":view},{"reportName":1})
-                        pending_reports = reportalert_coll.find({"executionOn":{"$gt":previous_day_epoch,"$lt":today_epoch},"triggerStatus" : "p","triggerType":triggerType,"orgViewReq.organization":org, "orgViewReq.view":view},{"reportName":1})
-                        inprogess_reports = reportalert_coll.find({"executionOn":{"$gt":previous_day_epoch,"$lt":today_epoch},"triggerStatus" : "i","triggerType":triggerType,"orgViewReq.organization":org,"orgViewReq.view":view},{"reportName":1})
-                        no_data_reports = reportalert_coll.find({"executionOn":{"$gt":previous_day_epoch,"$lt":today_epoch},"triggerStatus" : "ND","triggerType":triggerType,"orgViewReq.organization":org,"orgViewReq.view":view},{"reportName":1})
-                        failed_reports = reportalert_coll.find({"executionOn":{"$gt":previous_day_epoch,"$lt":today_epoch},"triggerStatus" : "f","triggerType":triggerType,"orgViewReq.organization":org,"orgViewReq.view":view},{"reportName":1})
+                        sent_reports = reportemail_coll.find({"emailSentTime":{"$gt":previous_day_epoch,"$lt":today_epoch},"emailStatus" : "c","triggerType":triggerType,"orgViewReq.organization":org,"orgViewReq.view":view},{"_id":1})
+                        pending_reports = reportalert_coll.find({"executionOn":{"$gt":previous_day_epoch,"$lt":today_epoch},"triggerStatus" : "p","triggerType":triggerType,"orgViewReq.organization":org, "orgViewReq.view":view},{"_id":1})
+                        inprogess_reports = reportalert_coll.find({"executionOn":{"$gt":previous_day_epoch,"$lt":today_epoch},"triggerStatus" : "i","triggerType":triggerType,"orgViewReq.organization":org,"orgViewReq.view":view},{"_id":1})
+                        no_data_reports = reportalert_coll.find({"executionOn":{"$gt":previous_day_epoch,"$lt":today_epoch},"triggerStatus" : "ND","triggerType":triggerType,"orgViewReq.organization":org,"orgViewReq.view":view},{"_id":1})
+                        failed_reports = reportalert_coll.find({"executionOn":{"$gt":previous_day_epoch,"$lt":today_epoch},"triggerStatus" : "f","triggerType":triggerType,"orgViewReq.organization":org,"orgViewReq.view":view},{"_id":1})
                         
                         for report in active_reports:
-                            report_email_list.append([report["loginInfo"]["providerKey"],report["reportName"]])
+                            report_email_list.append([report["loginInfo"]["providerKey"],report["_id"]])
                         
                         for email in active_users:
                             active_users_emails.append(email["email"])
@@ -290,7 +285,7 @@ def report_tracker(today_epoch,previous_day_epoch,day_of_week,yesterday_date,las
 
                             holder_list = []
                             for item in result_list:
-                                holder_list.append(item["reportName"])
+                                holder_list.append(item["_id"])
 
                             return holder_list
                         report_names_list = [ sent_reports, pending_reports, inprogess_reports, no_data_reports, failed_reports ]
@@ -301,8 +296,8 @@ def report_tracker(today_epoch,previous_day_epoch,day_of_week,yesterday_date,las
                             mismatch_reports_names_list.append(report_list)
                         
                         #creating an xl sheet 
-                        wb = Workbook()   
-                        mismatch = wb.create_sheet() 
+                        name = org+"_"+view+".xlsx"
+                        mismatch = wb.create_sheet(name) 
                         
                         xlsx_header_list = ["Estimated_reports", "Total_sent_reports", "Total_pending_reports", "Total_inprogess_reports", "Total_No_date_reports", "Total_failed_reports"]
                         
@@ -316,35 +311,48 @@ def report_tracker(today_epoch,previous_day_epoch,day_of_week,yesterday_date,las
                                 mismatch.cell(row=index2+3,column=index1+1).value = col
 
                         #removing default sheet
-                        name = org+"_"+view+".xlsx"
-                        wb.remove(wb["Sheet"])
-                        wb.save(name)
-
-                        attachment = open(name, 'rb')
-                        part = MIMEApplication(attachment.read(), _subtype='xlsx')
-                        part.add_header('Content-Disposition', 'attachment', filename=name)
-                        mismatch_message.attach(part)
-                        text += """
-                        {mismatch_count})
-                            Organization:   {org} 
-                            View:                {view} 
-                            TriggerType:    {triggerType}
-                            Details:
-                                    Estimated reports:   {estimated_reports_number}
-                                    Count of all states: {count_of_all_states}
-                                
-                        """.format(org = org, view = view, estimated_reports_number = estimated_reports_number, count_of_all_states = count_of_all_states, triggerType = triggerType,mismatch_count = mismatch_count)
-                        #removing created file
-                        remove(name)
-        text += "please find the attatchments bellow for the names."
-        mismatch_message.attach(MIMEText(text))
+                        mismatch_row += """ <tr style='background-color: #E1E5EA'>
+                                                <td> """+ org +""" </td>
+                                                <td> """+ view +""" </td>
+                                                <td> """+ triggerType +""" </td>
+                                                <td> """+ str(estimated_reports_number) +"""</td>
+                                                <td> """+ str(count_of_all_states) +""" </td>
+                                            </tr>"""
+        html = """\
+            <html>
+                <body>
+                    <h2 style="color:red;"><span style="font-size:20px;">❌</span> Mismatch found in the followings </h2>
+                    <h3>Date: {yesterday_date}</h3>
+                    <table border='1' style='border-collapse:collapse;text-align: center; vertical-align: middle;'>
+                        <tr style='background-color: #203239;color:#F7F7F7'>
+                            <th> Organization </th>
+                            <th> View </th>
+                            <th> Trigger type </th>
+                            <th> Estimated count </th>
+                            <th> All states count </th>
+                        </tr>
+                        {Mismatch_row}
+                    </table>
+                 <h4>Please find the reports IDs in the attatchments bellow.</h4>
+                </body>
+            </html>""".format(Mismatch_row=mismatch_row,yesterday_date=yesterday_date)
         
         if mismatch_count > 0 :
+            wb.remove(wb["Sheet"])
+            xl_name = "mismatch-"+ yesterday_date +"-.xlsx"
+            wb.save(xl_name)
+            attachment = open(xl_name, 'rb')
+            part = MIMEApplication(attachment.read(), _subtype='xlsx')
+            part.add_header('Content-Disposition', 'attachment', filename=xl_name)
+            mismatch_message.attach(part)
+            part1 = MIMEText(html,"html")
+            mismatch_message.attach(part1)
             try:
                 context = create_default_context()
                 with SMTP_SSL(SMTP_SERVER,SMTP_PORT, context=context) as server:
                     server.login(SENDER_EMAIL,EMAIL_PASSWORD)
                     server.sendmail(SENDER_EMAIL,RECIVER_EMAIL,mismatch_message.as_string())
+                    remove(xl_name)
             except:
                 print("Something went wrong")
 
@@ -355,9 +363,9 @@ def report_tracker(today_epoch,previous_day_epoch,day_of_week,yesterday_date,las
         failed_message["Subject"] = "[ALERT] Failed Reports [{yesterday_date}]".format(yesterday_date=yesterday_date)
         failed_message["From"] = SENDER_EMAIL
         failed_message["To"] = RECIVER_EMAIL
-        text =  """Hello,
-                  Failed reports found in {yesterday_date} for followings """.format(yesterday_date = yesterday_date)
         fail_count = 0
+        failed_row =""
+        wb = Workbook()   
         for reports_list in all_data_list:
 
             #handling exception for monthly report
@@ -372,50 +380,62 @@ def report_tracker(today_epoch,previous_day_epoch,day_of_week,yesterday_date,las
                         triggerType = reports_list[0]
                         failed_reports_number = report[7]
 
-                        failed_reports = reportalert_coll.find({"executionOn":{"$gt":previous_day_epoch,"$lt":today_epoch},"triggerStatus" : "f","triggerType":triggerType,"orgViewReq.organization":org,"orgViewReq.view":view},{"reportName":1})
+                        failed_reports = reportalert_coll.find({"executionOn":{"$gt":previous_day_epoch,"$lt":today_epoch},"triggerStatus" : "f","triggerType":triggerType,"orgViewReq.organization":org,"orgViewReq.view":view},{"_id":1})
                         failed_reports_names =[]
                             
                         for item in failed_reports:
-                            failed_reports_names.append(item["reportName"])
+                            failed_reports_names.append(item["_id"])
                     
                         #creating an xl sheet 
-                        wb = Workbook()   
-                        failed = wb.create_sheet() 
+                        name = org+"_"+view+".xlsx"
+                        failed = wb.create_sheet(name) 
                         failed.cell(1,1).value = "Failed report names"
 
                         #adding failed reportnames to sheet
                         for index, item in enumerate(failed_reports_names):
                             failed.cell(index+2,1).value = item
-
-                        #removing default sheet
-                        wb.remove(wb["Sheet"])
-                        name = org+"_"+view+".xlsx"
-                        wb.save(name)
-
-                        attachment = open(name, 'rb')
-                        part = MIMEApplication(attachment.read(), _subtype='xlsx')
-                        part.add_header('Content-Disposition', 'attachment', filename=name)
-                        failed_message.attach(part)
-                        text += """
-                        {fail_count})
-                            Organization:   {org} 
-                            View:               {view} 
-                            TriggerType:     {triggerType}
-                            Details:
-                                    Number of reports failed: {failed_reports_number}
-                                
-                        """.format(org = org, view = view, triggerType = triggerType, failed_reports_number = failed_reports_number,fail_count=str(fail_count))
-                        #removing created file
-                        remove(name)
-        text += "please find the attatchments bellow for the reports names."
-        failed_message.attach(MIMEText(text))
+                        
+                        failed_row += """ <tr style='background-color: #E1E5EA'>
+                                                <td> """+ org +""" </td>
+                                                <td> """+ view +""" </td>
+                                                <td> """+ triggerType +""" </td>
+                                                <td> """+ str(failed_reports_number) +"""</td>
+                                            </tr>"""
+        html = """\
+                    <html>
+                        <body>
+                            <h2 style="color:red;"><span style="font-size:20px;">❌</span> Failed report found in the followings </h2>
+                            <h3>Date: {yesterday_date}</h3>
+                            <table border='1' style='border-collapse:collapse;text-align: center; vertical-align: middle;'>
+                                <tr style='background-color: #203239;color:#F7F7F7'>
+                                    <th> Organization </th>
+                                    <th> View </th>
+                                    <th> Trigger type </th>
+                                    <th> Failed state count </th>
+                                </tr>
+                                {failed_row}
+                            </table>
+                            <h4>Please find the reports IDs in the attatchments bellow.</h4>
+                        </body>
+                    </html>""".format(failed_row=failed_row,yesterday_date=yesterday_date)
 
         if fail_count > 0:
+            #removing default sheet
+            wb.remove(wb["Sheet"])
+            xl_name = "failed-" + yesterday_date +"-.xlsx"
+            wb.save(xl_name)
+            attachment = open(xl_name, 'rb')
+            part = MIMEApplication(attachment.read(), _subtype='xlsx')
+            part.add_header('Content-Disposition', 'attachment', filename=xl_name)
+            failed_message.attach(part)
+            part1 = MIMEText(html,"html")
+            failed_message.attach(part1)
             try:
                 context = create_default_context()
                 with SMTP_SSL(SMTP_SERVER,SMTP_PORT, context=context) as server:
                     server.login(SENDER_EMAIL,EMAIL_PASSWORD)
                     server.sendmail(SENDER_EMAIL,RECIVER_EMAIL,failed_message.as_string())
+                    remove(xl_name)
             except:
                 print("Something went wrong")
 
@@ -450,7 +470,7 @@ if data_lag != None:
 
         else:
             email_sent_time = pickle_load(open("sendtime.pkl","rb"))
-            if email_sent_time < int(today_epoch):
+            if int(email_sent_time) < int(today_epoch):
                 days = int((int(today_epoch) - int(email_sent_time))/86400000)
                 for day in range(1,days+1):
                     today_epoch = str((int((date.today() - timedelta(days=day-1)).strftime("%s")) *1000)+19800000) 
@@ -459,6 +479,6 @@ if data_lag != None:
                     yesterday_date = (date.today() - timedelta(days = day)).strftime("%d-%m-%Y")
                     last_month = ((date.today() - timedelta(days=day+1)).replace(day = 1) - timedelta(days=1)).strftime("%B")
                     report_tracker(today_epoch,previous_day_epoch,day_of_week,yesterday_date,last_month)
-                email_sent_time = today_epoch
+                email_sent_time = str((int(date.today().strftime("%s")) *1000)+19800000)
                 with open("sendtime.pkl", "wb") as file:
                     pickle_dump(email_sent_time, file)

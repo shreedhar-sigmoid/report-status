@@ -3,9 +3,11 @@ from datetime import date ,timedelta, datetime
 
 # today_epoch = (int(date.today().strftime("%s")) *1000)+19800000
 
-email_sent_time = 1647475200000
+email_sent_time = str(1647475200000)
 with open("sendtime.pkl", "wb") as file:
     pickle_dump(email_sent_time, file)
+
+
 
 # today_epoch = str((int(date.today().strftime("%s")) *1000)+19800000)
 # previous_day_epoch = str((int((date.today() - timedelta(days=1)).strftime("%s")) *1000)+19800000)   
