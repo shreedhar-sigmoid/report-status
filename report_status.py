@@ -21,16 +21,17 @@ RECIVER_EMAIL= getenv('RECIVER_EMAIL')
 EMAIL_PASSWORD= getenv('EMAIL_PASSWORD')
 
 
-def tracker(today_epoch,previous_day_epoch,day_of_week,yesterday_date,last_month,monthly_epoch):
-
+def tracker(today_epoch, previous_day_epoch,
+            day_of_week, yesterday_date,
+            last_month, monthly_epoch):
     """
     tracker function sends Reports status mail
     
-    today_epoch        : Epoch time for state date
+    today_epoch : Epoch time for state date
     previous_day_epoch : Epoch time for end date
-    day_of_week        : Day for the trigger day 
-    yesterday_date     : Yesterday date in MM-DD-YYYY format
-    last_month         : Month name 
+    day_of_week : Day for the trigger day 
+    yesterday_date : Yesterday date in MM-DD-YYYY format
+    last_month : Month name 
     
     """
 
@@ -41,13 +42,15 @@ def tracker(today_epoch,previous_day_epoch,day_of_week,yesterday_date,last_month
 
     report_coll, uns_coll, reportemail_coll, reportalert_coll = get_mongo_coll()
 
-    def get_reports(ORG_LIST,triggerType,triggerDay):
+    def get_reports(ORG_LIST, triggerType, triggerDay):
+        """ This function returns report all status counts"""
+        data = []  # Initialize empty list to store the counts              
 
-        data = []
-        for org,view in ORG_LIST:
+        for org, view in ORG_LIST:
+            # Fetches the reports states based on Org and view
 
-            report_email_list = []
-            active_users_emails = []
+            report_email_list = []  
+            active_users_emails = []  
             estimated_reports = 0
 
             active_reports = report_coll.find({"reportStatus":"active","triggerType" : triggerType,"triggerDay" : triggerDay,"orgViewReq.organization" : org,"orgViewReq.view" : view,"createdOn" : {"$lt":previous_day_epoch}},{"loginInfo.providerKey":1})
