@@ -17,7 +17,7 @@ last_month = (date.today().replace(day = 1) - timedelta(days=1)).strftime("%B")
 days = int((int(today_epoch) - int(email_sent_time))/86400000) 
 print(days)
 # print(today_epoch,previous_day_epoch,day_of_week,yesterday_date,last_month)
-for day in reversed(range(days)):
+for day in reversed(range(1,days)):
                     today_epoch = str((int((date.today() - timedelta(days=day-1)).strftime("%s")) *1000)+19800000) 
                     previous_day_epoch = str((int((date.today() - timedelta(days=day)).strftime("%s")) *1000)+19800000) 
                     day_of_week = datetime.fromtimestamp(int(previous_day_epoch)/1000).strftime("%A").lower()

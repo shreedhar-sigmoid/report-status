@@ -25,19 +25,10 @@ if data_lag != None:
             # in the sendtime.pkl file
 
             today_epoch = str((int(date.today().strftime("%s")) * 1000) + 19800000)
-            previous_day_epoch = str(
-                (int((date.today() - timedelta(days=1)).strftime("%s")) * 1000)
-                + 19800000
-            )
-            day_of_week = (
-                datetime.fromtimestamp(int(previous_day_epoch) / 1000)
-                .strftime("%A")
-                .lower()
-            )
+            previous_day_epoch = str((int((date.today() - timedelta(days=1)).strftime("%s")) * 1000) + 19800000)
+            day_of_week = datetime.fromtimestamp(int(previous_day_epoch) / 1000).strftime("%A").lower()
             yesterday_date = (date.today() - timedelta(days=1)).strftime("%d-%m-%Y")
-            last_month = (date.today().replace(day=1) - timedelta(days=1)).strftime(
-                "%B"
-            )
+            last_month = (date.today().replace(day=1) - timedelta(days=1)).strftime("%B")
 
             tracker(
                 today_epoch,
@@ -58,36 +49,15 @@ if data_lag != None:
 
                 days = int((int(today_epoch) - int(email_sent_time)) / 86400000)
 
-                for day in reversed(range(days)):
+                for day in reversed(range(1,days)):
                     # Due to data lag if email din't triggered for more than one day then,
                     # this block will sends report status from last time report status triggered
 
-                    today_epoch = str(
-                        (
-                            int((date.today() - timedelta(days=day - 1)).strftime("%s"))
-                            * 1000
-                        )
-                        + 19800000
-                    )
-                    previous_day_epoch = str(
-                        (
-                            int((date.today() - timedelta(days=day)).strftime("%s"))
-                            * 1000
-                        )
-                        + 19800000
-                    )
-                    day_of_week = (
-                        datetime.fromtimestamp(int(previous_day_epoch) / 1000)
-                        .strftime("%A")
-                        .lower()
-                    )
-                    yesterday_date = (date.today() - timedelta(days=day)).strftime(
-                        "%d-%m-%Y"
-                    )
-                    last_month = (
-                        (date.today() - timedelta(days=day + 1)).replace(day=1)
-                        - timedelta(days=1)
-                    ).strftime("%B")
+                    today_epoch = str((int((date.today() - timedelta(days=day - 1)).strftime("%s")) * 1000)+ 19800000)
+                    previous_day_epoch = str((int((date.today() - timedelta(days=day)).strftime("%s"))* 1000)+ 19800000)
+                    day_of_week = datetime.fromtimestamp(int(previous_day_epoch) / 1000).strftime("%A").lower()
+                    yesterday_date = (date.today() - timedelta(days=day)).strftime("%d-%m-%Y")
+                    last_month = ((date.today() - timedelta(days=day + 1)).replace(day=1) - timedelta(days=1)).strftime("%B")
 
                     tracker(
                         today_epoch,
@@ -98,8 +68,6 @@ if data_lag != None:
                         monthly_epoch,
                     )
 
-                email_sent_time = str(
-                    (int(date.today().strftime("%s")) * 1000) + 19800000
-                )
+                email_sent_time = str((int(date.today().strftime("%s")) * 1000) + 19800000)
                 with open("sendtime.pkl", "wb") as file:
                     pickle_dump(email_sent_time, file)
